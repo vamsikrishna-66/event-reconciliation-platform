@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -69,6 +72,15 @@ func main() {
 	endpoint := os.Getenv("BROKER_HTTP_URL")
 	if endpoint == "" {
 		endpoint = "http://localhost:8082"
+	}
+	if len(os.Args) == 2 && os.Args[1] == "reconcile" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := reconcile(ctx, endpoint); err != nil && ctx.Err() == nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
 	}
 	events := fixture()
 	if err := publish(&http.Client{Timeout: 10 * time.Second}, endpoint, events); err != nil {

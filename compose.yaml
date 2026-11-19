@@ -21,3 +21,29 @@ services:
     depends_on:
       topics:
         condition: service_completed_successfully
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_PASSWORD: synthetic
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -h localhost -U postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    volumes:
+      - ledger:/var/lib/postgresql/data
+  reconciler:
+    build: .
+    command: [reconcile]
+    environment:
+      BROKER_HTTP_URL: http://broker:8082
+      PGHOST: postgres
+      PGUSER: postgres
+      PGPASSWORD: synthetic
+    depends_on:
+      topics:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+volumes:
+  ledger:
