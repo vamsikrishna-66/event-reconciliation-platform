@@ -1,0 +1,23 @@
+services:
+  broker:
+    image: redpandadata/redpanda:v24.3.8
+    command: [redpanda, start, --mode, dev-container, --smp, '1', --advertise-kafka-addr, 'broker:9092']
+    healthcheck:
+      test: [CMD, rpk, cluster, health, --exit-when-healthy]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+  topics:
+    image: redpandadata/redpanda:v24.3.8
+    entrypoint: [rpk]
+    command: [topic, create, order-events, -X, brokers=broker:9092]
+    depends_on:
+      broker:
+        condition: service_healthy
+  emitter:
+    build: .
+    environment:
+      BROKER_HTTP_URL: http://broker:8082
+    depends_on:
+      topics:
+        condition: service_completed_successfully
