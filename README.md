@@ -12,3 +12,5 @@ go test ./...
 ```
 
 The fixture produces one reconciled order with 12,000 cents paid, 2,500 cents refunded, and 9,500 cents net.
+
+Run `sh scripts/verify-recovery.sh` to verify duplicate handling and recovery against Redpanda and PostgreSQL. The check starts an isolated Compose project, verifies the ledger after ingest, kills the reconciler, publishes the fixture again while it is down, then checks that the restarted worker consumes all eight records and leaves exactly three ledger entries with the same totals.
