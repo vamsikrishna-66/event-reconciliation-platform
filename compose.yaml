@@ -45,5 +45,21 @@ services:
         condition: service_completed_successfully
       postgres:
         condition: service_healthy
+  evidence:
+    profiles: [evidence]
+    build:
+      context: .
+      dockerfile: Dockerfile.evidence
+    environment:
+      EVIDENCE_DSN: postgresql://postgres:synthetic@postgres/postgres
+      LLM_CHAT_URL: ${LLM_CHAT_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   ledger:
