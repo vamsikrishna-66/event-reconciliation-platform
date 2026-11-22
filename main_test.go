@@ -31,3 +31,24 @@ func TestPublishPreservesDuplicateAndArrivalOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func BenchmarkPublishFixture(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload json.RawMessage
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+		w.Write([]byte(`{"offsets":[{},{},{},{}]}`))
+	}))
+	defer server.Close()
+	client := server.Client()
+	events := fixture()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := publish(client, server.URL, events); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -37,10 +37,12 @@ docker compose up --build -d reconciler
 docker compose run --build --rm --no-deps emitter
 wait_for_batch
 assert_ledger
+printf "Ledger verified. Killing the reconciler and publishing while it is down.\n"
 docker compose kill -s SIGKILL reconciler
 docker compose run --rm --no-deps emitter
 
 # Recreate only the worker. The broker log and PostgreSQL ledger survive.
+restart_started=$(date +%s)
 docker compose up -d --no-deps --force-recreate reconciler
 attempts=0
 while :; do
@@ -56,3 +58,4 @@ while :; do
 done
 assert_ledger
 printf 'Verified duplicate handling and recovery after replaying %s records.\n' "$processed"
+printf 'Restart to verified ledger: %s seconds (includes startup and polling).\n' "$(( $(date +%s) - restart_started ))"

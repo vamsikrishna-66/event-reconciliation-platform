@@ -18,3 +18,9 @@ Run `sh scripts/verify-recovery.sh` to verify duplicate handling and recovery ag
 After the reconciler initializes the ledger, run `docker compose up --build -d evidence` to serve read-only evidence on localhost. Request `GET /tools/orders/order-1` to retrieve the status and exact cent amounts for the synthetic fixture. Amounts are decimal strings to preserve integer precision.
 
 Set `LLM_CHAT_URL` to a reachable OpenAI-compatible chat completions endpoint and set `LLM_MODEL` (plus `LLM_API_KEY` if required). Call `POST /explain/orders/order-1` to get a model-selected focus, a server-rendered explanation, and the evidence row and link. The server validates the focus and derives all published claims and amounts from the ledger row.
+
+## Failure demo and benchmark
+
+Run `sh scripts/verify-recovery.sh` to reproduce a consumer crash and verify the recovered ledger. The script prints the replayed record count and wall time from restart to ledger verification, including container startup and log polling. It removes the isolated project's containers and volumes on exit.
+
+Run `go test -bench '^BenchmarkPublishFixture$' -benchmem -count=3 ./...` to measure the four-record publisher batch against a local HTTP server returning synthetic acknowledgments. On Linux amd64 with an AMD EPYC 9V74, three runs measured 54.0–56.4 µs per batch and 111 allocations per batch. This measures JSON encoding, loopback HTTP, and acknowledgment validation. Redpanda and PostgreSQL recovery timing requires the Compose demo.
